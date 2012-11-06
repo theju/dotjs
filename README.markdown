@@ -54,6 +54,31 @@ to http://localhost:3131/convore.com.js any time you
 hit a page on convore.com, for example, and executes
 the returned JavaScript.
 
+----
+It's also possible to send changes to the page after
+the javascript has loaded.
+
+For example, you are visiting github.com and you want
+to reload the page.
+
+In the ~/.js/github.com.js::
+
+(function poll() {
+  var url = "http://localhost:3131/" + window.location.hostname.replace(/^www\./, '') + '.js?poll=1';
+  $.ajax({
+      url: url,
+      success: function(data) { eval(data); },
+      complete: function() { setTimeout(poll, 1000); }
+  });
+})();
+
+Make an HTTP post request to the server with the JS command
+you wish to run::
+
+curl -X POST -d "cmd=window.location.reload();" "http://localhost:3131/github.com.js"
+
+----
+
 ## Requires
 
 - OS X
