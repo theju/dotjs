@@ -12,10 +12,18 @@ if ARGV.include?('-v')
 end
 
 require 'webrick'
+require 'thread'
+
+SITE_CMD_QUEUE = {}
+DOT_JS_FILES_DIR = '~/.js'
 
 dotjs = Class.new(WEBrick::HTTPServlet::AbstractServlet) do
   def do_GET(request, response)
-    body = build_body(request.path)
+    if request.query.has_key?("poll")
+      body = fetch_queue(request.path)
+    else
+      body = build_body(request.path)
+    end
 
     response.status = body.empty? ? 204 : 200
     if origin = detect_origin(request)
@@ -25,12 +33,23 @@ dotjs = Class.new(WEBrick::HTTPServlet::AbstractServlet) do
     response.body = body
   end
 
+  def do_POST(request, response)
+    site = request.path.gsub('/', '')
+    if SITE_CMD_QUEUE[site].nil?
+      SITE_CMD_QUEUE[site] = Queue.new
+    end
+    body = request.body.slice(request.body.index('cmd=') + 'cmd='.length,
+                              request.body.length)
+    SITE_CMD_QUEUE[site].push(body)
+    response.status = 204
+  end
+
   def build_body(path)
-    files = [File.expand_path("default.js")]
+    files = [File.expand_path("default.js", DOT_JS_FILES_DIR)]
     paths = path.gsub('/','').split('.')
 
     until paths.empty?
-      file = File.expand_path(paths.join('.'))
+      file = File.expand_path(paths.join('.'), DOT_JS_FILES_DIR)
       files << file if File.file?(file)
       paths.shift
     end
@@ -52,6 +71,17 @@ dotjs = Class.new(WEBrick::HTTPServlet::AbstractServlet) do
     if origin.length == 1 && path.length != 1 && origin[0].match(search)
       origin[0]
     end
+  end
+
+  def fetch_queue(path)
+    site = path.gsub('/', '')
+    if SITE_CMD_QUEUE[site].nil?
+      SITE_CMD_QUEUE[site] = Queue.new
+    end
+    body = SITE_CMD_QUEUE[site].pop if not SITE_CMD_QUEUE[site].empty?
+    body = "" if body.nil?
+
+    body
   end
 end
 
