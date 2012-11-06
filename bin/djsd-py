@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+from bottle import route, run, request, response
+from Queue import Queue
+import collections
+import os
+
+SITE_CMD_QUEUE = collections.defaultdict(Queue)
+DOT_JS_FILES_FOLDER = os.path.join(os.path.expanduser("~"), ".js")
+
+@route("/:site", method=['GET', 'POST'])
+def load_js(site=None):
+    if request.method == "POST":
+        SITE_CMD_QUEUE[site].put(request.POST["cmd"])
+    elif request.method == "GET":
+        if request.query.get("poll"):
+            if not SITE_CMD_QUEUE[site].empty():
+                item = SITE_CMD_QUEUE[site].get(False)
+                response.body = item
+        else:
+            try:
+                js_file = open(os.path.join(DOT_JS_FILES_FOLDER, site))
+            except IOError:
+                pass
+            else:
+                response.body = js_file.read()
+            response.set_header("Content-Type", "text/javascript")
+    return response
+
+if __name__ == "__main__":
+    run(host='localhost', port=3131, quiet=True, debug=True)
