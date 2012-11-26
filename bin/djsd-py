@@ -24,7 +24,6 @@ def load_js(site=None):
                 pass
             else:
                 response.body = js_file.read()
-            response.set_header("Content-Type", "text/javascript")
     return response
 
 if __name__ == "__main__":
