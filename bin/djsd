@@ -29,7 +29,6 @@ dotjs = Class.new(WEBrick::HTTPServlet::AbstractServlet) do
     if origin = detect_origin(request)
       response['Access-Control-Allow-Origin'] = origin
     end
-    response['Content-Type'] = 'text/javascript'
     response.body = body
   end
 
@@ -38,8 +37,9 @@ dotjs = Class.new(WEBrick::HTTPServlet::AbstractServlet) do
     if SITE_CMD_QUEUE[site].nil?
       SITE_CMD_QUEUE[site] = Queue.new
     end
-    body = request.body.slice(request.body.index('cmd=') + 'cmd='.length,
-                              request.body.length)
+    body = WEBrick::HTTPUtils.unescape(request.body.slice(request.body.index('cmd=') + \
+                                                          'cmd='.length,
+                                                          request.body.length))
     SITE_CMD_QUEUE[site].push(body)
     response.status = 204
   end
