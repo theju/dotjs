@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from bottle import route, run, request, response
-from Queue import Queue
+from queue import Queue
 import collections
 import os
 
@@ -27,4 +27,11 @@ def load_js(site=None):
     return response
 
 if __name__ == "__main__":
-    run(host='localhost', port=3131, quiet=True, debug=True)
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    cert_path = os.path.join(base_dir, "pki/localhost.crt")
+    key_path = os.path.join(base_dir, "pki/localhost.key")
+    run(
+        host='localhost', server="gunicorn", port=3131,
+        quiet=False, debug=True,
+        certfile=cert_path, keyfile=key_path,
+    )
